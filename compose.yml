@@ -1,0 +1,105 @@
+name: imlesbian-fyi
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-imlesbian}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-imlesbian_fyi}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-imlesbian}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+    # Not exposed to the host by default — uncomment if you need to reach
+    # the DB directly (e.g. psql from your machine) during setup.
+    # ports:
+    #   - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4070
+      DATABASE_URL: postgres://${POSTGRES_USER:-imlesbian}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-imlesbian_fyi}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://imlesbian.fyi}
+      FRONTEND_DASHBOARD_URL: ${FRONTEND_DASHBOARD_URL:-https://imlesbian.fyi/dashboard}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?DISCORD_CLIENT_ID is required}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:?DISCORD_CLIENT_SECRET is required}
+      DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI:-https://api.imlesbian.fyi/auth/discord/callback}
+    networks:
+      - internal
+    # Not exposed to the host — nginx reaches it over the internal network
+    # at "backend:4070". Uncomment for local debugging without nginx.
+    # ports:
+    #   - "4070:4070"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.imlesbian.fyi}
+    networks:
+      - internal
+    # ports:
+    #   - "3000:3000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
+      - certbot_www:/var/www/certbot:ro
+      - letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - internal
+
+  # Renews the wildcard Let's Encrypt cert on a loop via DNS-01 (required
+  # for wildcards — HTTP-01/webroot can't issue *.imlesbian.fyi). First
+  # issuance still needs to be done manually once (see docs/deployment.md);
+  # after that, `certbot renew` reuses the DNS-01 plugin recorded for that
+  # cert automatically, so no --webroot flag here.
+  certbot:
+    image: certbot/dns-cloudflare:latest
+    restart: unless-stopped
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - ./cloudflare.ini:/etc/letsencrypt/cloudflare.ini:ro
+    entrypoint: >
+      sh -c "trap exit TERM; while :; do
+        certbot renew --quiet;
+        sleep 12h & wait $${!};
+      done"
+
+networks:
+  internal:
+
+volumes:
+  postgres_data:
+  letsencrypt:
+  certbot_www:

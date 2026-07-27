@@ -1,0 +1,8 @@
+# Copy to cloudflare.ini at the repo root, fill in a scoped API token
+# (Zone:DNS:Edit permission on imlesbian.fyi only), then:
+#   chmod 600 cloudflare.ini
+#
+# Create the token at: https://dash.cloudflare.com/profile/api-tokens
+# Do NOT use your Global API Key — scope this to one zone.
+
+dns_cloudflare_api_token = your_scoped_api_token_here

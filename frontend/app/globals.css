@@ -1,0 +1,48 @@
+:root {
+  --ink: #17121e;
+  --paper: #fdf9f6;
+  --muted: #7a7086;
+
+  /* Signature gradient — lesbian pride flag stops, used sparingly as a
+     single accent ring/underline, never as a full-bleed background. */
+  --flag-1: #d62800;
+  --flag-2: #ff9b56;
+  --flag-3: #ffffff;
+  --flag-4: #d462a6;
+  --flag-5: #a30262;
+
+  --radius-lg: 20px;
+  --radius-md: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+a {
+  color: inherit;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--flag-4);
+  outline-offset: 3px;
+}
