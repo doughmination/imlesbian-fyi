@@ -11,7 +11,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4071
-      DATABASE_URL: postgres://${POSTGRES_USER:-imlesbian}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-imlesbian_fyi}
+      DATABASE_URL: postgres://${POSTGRES_USER:-imlesbian}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-imlesbian_fyi}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://imlesbian.fyi}
       FRONTEND_DASHBOARD_URL: ${FRONTEND_DASHBOARD_URL:-https://imlesbian.fyi/dashboard}
