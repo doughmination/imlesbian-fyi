@@ -14,6 +14,11 @@ import type { AuthedUser } from "./middleware";
 
 const OAUTH_STATE_COOKIE = "imlesbian_oauth_state";
 const isProd = process.env.NODE_ENV === "production";
+// Session cookie needs to be readable by both api.imlesbian.fyi (where it's
+// set, during the OAuth redirect) and imlesbian.fyi (the frontend, which
+// forwards it server-side on every page load). Leave unset for local dev —
+// setting `domain` on a bare "localhost" cookie breaks browsers.
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 
 export const authRoutes = new Hono();
 
@@ -85,6 +90,7 @@ authRoutes.get("/discord/callback", async (c) => {
     sameSite: "Lax",
     maxAge: SESSION_TTL_SECONDS,
     path: "/",
+    domain: COOKIE_DOMAIN,
   });
 
   const dashboardUrl = process.env.FRONTEND_DASHBOARD_URL ?? "/dashboard";
@@ -92,7 +98,7 @@ authRoutes.get("/discord/callback", async (c) => {
 });
 
 authRoutes.post("/logout", (c) => {
-  deleteCookie(c, SESSION_COOKIE_NAME, { path: "/" });
+  deleteCookie(c, SESSION_COOKIE_NAME, { path: "/", domain: COOKIE_DOMAIN });
   return c.json({ ok: true });
 });
 
