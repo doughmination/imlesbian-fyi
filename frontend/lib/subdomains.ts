@@ -28,21 +28,3 @@ export async function getSubdomainTarget(
     active: data.active,
   };
 }
-
-// --- Custom domains ---
-// There's no backend support for these yet (schema exists, no route) —
-// this intentionally always returns null until that's built, so
-// /d/[domain] falls through to the "not claimed" state rather than lying
-// about ownership.
-export interface CustomDomainTarget {
-  domain: string;
-  destinationUrl: string;
-  ownerDisplayName: string;
-  active: boolean;
-}
-
-export async function getCustomDomainTarget(
-  _domain: string
-): Promise<CustomDomainTarget | null> {
-  return null;
-}
