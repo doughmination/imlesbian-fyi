@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { getServerSession } from "@/lib/session";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const user = await getServerSession();
+
   return (
     <header
       style={{
@@ -35,12 +38,21 @@ export function SiteHeader() {
         <Link href="/docs" style={{ textDecoration: "none", color: "var(--muted)" }}>
           docs
         </Link>
-        <Link
-          href="/dashboard"
-          style={{ textDecoration: "none", color: "var(--muted)" }}
-        >
-          dashboard
-        </Link>
+        {user ? (
+          <Link
+            href="/dashboard"
+            style={{ textDecoration: "none", color: "var(--muted)" }}
+          >
+            dashboard
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            style={{ textDecoration: "none", color: "var(--paper)" }}
+          >
+            log in
+          </Link>
+        )}
       </nav>
     </header>
   );

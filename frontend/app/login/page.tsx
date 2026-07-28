@@ -1,31 +1,15 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
 import { SiteHeader } from "@/app/components/SiteHeader";
 import { DiscordLoginButton } from "./DiscordLoginButton";
-import { API_URL } from "@/lib/api";
+import { getServerSession } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Log in — imlesbian.fyi",
 };
 
-async function getSessionUser() {
-  const cookieStore = await cookies();
-  const header = cookieStore.toString();
-  if (!header) return null;
-
-  const res = await fetch(`${API_URL}/auth/me`, {
-    headers: { Cookie: header },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-
-  const data = await res.json();
-  return data.user ?? null;
-}
-
 export default async function LoginPage() {
-  const user = await getSessionUser();
+  const user = await getServerSession();
   if (user) {
     redirect("/dashboard");
   }

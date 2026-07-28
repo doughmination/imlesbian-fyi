@@ -24,6 +24,10 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "imlesbian.fyi",
   description: "Your tiny queer corner of the internet.",
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { SiteHeader } from "@/app/components/SiteHeader";
 import { DashboardClient } from "./DashboardClient";
-import { API_URL, type Me, type MineResponse } from "@/lib/api";
+import { API_URL, type MineResponse } from "@/lib/api";
+import { getServerSession } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Dashboard — imlesbian.fyi",
@@ -23,8 +24,7 @@ async function fetchWithSession<T>(path: string): Promise<T | null> {
 }
 
 export default async function DashboardPage() {
-  const meData = await fetchWithSession<{ user: Me | null }>("/auth/me");
-  const user = meData?.user ?? null;
+  const user = await getServerSession();
 
   if (!user) {
     redirect("/login");
