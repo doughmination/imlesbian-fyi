@@ -38,6 +38,9 @@ export async function SiteHeader() {
         <Link href="/docs" style={{ textDecoration: "none", color: "var(--muted)" }}>
           docs
         </Link>
+        <Link href="/terms" style={{ textDecoration: "none", color: "var(--muted)" }}>
+          terms
+        </Link>
         {user ? (
           <Link
             href="/dashboard"
