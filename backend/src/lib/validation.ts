@@ -12,17 +12,19 @@ export const RESERVED_SUBDOMAINS = new Set([
   "mail",
 ]);
 
-export const subdomainNameSchema = z
+export const subdomainFormatSchema = z
   .string()
   .min(2, "Must be at least 2 characters")
   .max(63, "Must be 63 characters or fewer") // DNS label limit
   .regex(
     /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/,
     "Only lowercase letters, numbers, and hyphens — can't start or end with a hyphen"
-  )
-  .refine((val) => !RESERVED_SUBDOMAINS.has(val), {
-    message: "This subdomain is reserved",
-  });
+  );
+
+export const subdomainNameSchema = subdomainFormatSchema.refine(
+  (val) => !RESERVED_SUBDOMAINS.has(val),
+  { message: "This subdomain is reserved" }
+);
 
 export const destinationUrlSchema = z
   .string()
@@ -55,6 +57,14 @@ export const destinationUrlSchema = z
 
 export const claimSubdomainSchema = z.object({
   name: subdomainNameSchema,
+  destinationUrl: destinationUrlSchema,
+});
+
+// Used for admin claims only — same DNS-format rules, but allowed to
+// claim reserved words on purpose (that's the whole point: admins hold
+// the name so nobody else can grab it).
+export const adminClaimSubdomainSchema = z.object({
+  name: subdomainFormatSchema,
   destinationUrl: destinationUrlSchema,
 });
 

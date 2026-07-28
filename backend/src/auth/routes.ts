@@ -10,6 +10,7 @@ import {
   discordAvatarUrl,
 } from "./discord";
 import { createSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from "./session";
+import { isAdmin } from "@/lib/admin";
 import type { AuthedUser } from "./middleware";
 
 const OAUTH_STATE_COOKIE = "imlesbian_oauth_state";
@@ -113,6 +114,7 @@ authRoutes.get("/me", (c) => {
       discordUsername: user.discordUsername,
       discordAvatar: user.discordAvatar,
       createdAt: user.createdAt,
+      isAdmin: isAdmin(user),
     },
   });
 });

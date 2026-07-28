@@ -3,8 +3,10 @@ import { eq, and, count } from "drizzle-orm";
 import { db } from "@/db/client";
 import { subdomains, users } from "@/db/schema";
 import { requireAuth } from "@/auth/middleware";
+import { isAdmin } from "@/lib/admin";
 import {
   claimSubdomainSchema,
+  adminClaimSubdomainSchema,
   updateSubdomainSchema,
   subdomainNameSchema,
   discordVerificationHashSchema,
@@ -90,6 +92,7 @@ subdomainRoutes.get("/verify/:name", async (c) => {
 
 subdomainRoutes.get("/mine", requireAuth, async (c) => {
   const user = c.get("user")!;
+  const admin = isAdmin(user);
   const mine = await db
     .select()
     .from(subdomains)
@@ -97,21 +100,26 @@ subdomainRoutes.get("/mine", requireAuth, async (c) => {
 
   return c.json({
     subdomains: mine,
-    limit: MAX_SUBDOMAINS_PER_USER,
-    claimCooldownUntil: user.subdomainClaimCooldownUntil,
+    limit: admin ? null : MAX_SUBDOMAINS_PER_USER,
+    claimCooldownUntil: admin ? null : user.subdomainClaimCooldownUntil,
+    isAdmin: admin,
   });
 });
 
 subdomainRoutes.post("/claim", requireAuth, async (c) => {
   const user = c.get("user")!;
+  const admin = isAdmin(user);
   const body = await c.req.json().catch(() => null);
-  const parsed = claimSubdomainSchema.safeParse(body);
+  const parsed = (admin ? adminClaimSubdomainSchema : claimSubdomainSchema).safeParse(
+    body
+  );
 
   if (!parsed.success) {
     return c.json({ error: parsed.error.issues[0]?.message }, 400);
   }
 
   if (
+    !admin &&
     user.subdomainClaimCooldownUntil &&
     user.subdomainClaimCooldownUntil.getTime() > Date.now()
   ) {
@@ -124,16 +132,18 @@ subdomainRoutes.post("/claim", requireAuth, async (c) => {
     );
   }
 
-  const [{ value: ownedCount }] = await db
-    .select({ value: count() })
-    .from(subdomains)
-    .where(eq(subdomains.ownerId, user.id));
+  if (!admin) {
+    const [{ value: ownedCount }] = await db
+      .select({ value: count() })
+      .from(subdomains)
+      .where(eq(subdomains.ownerId, user.id));
 
-  if (ownedCount >= MAX_SUBDOMAINS_PER_USER) {
-    return c.json(
-      { error: `You can only claim up to ${MAX_SUBDOMAINS_PER_USER} subdomains` },
-      403
-    );
+    if (ownedCount >= MAX_SUBDOMAINS_PER_USER) {
+      return c.json(
+        { error: `You can only claim up to ${MAX_SUBDOMAINS_PER_USER} subdomains` },
+        403
+      );
+    }
   }
 
   const { name, destinationUrl } = parsed.data;

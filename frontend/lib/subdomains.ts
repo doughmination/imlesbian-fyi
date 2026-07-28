@@ -1,6 +1,4 @@
-// Temporary in-memory mock. Once the backend/API exists, replace the body
-// of these functions with real fetch() calls to the FastAPI service —
-// keep the function signatures the same so nothing upstream has to change.
+import { API_URL } from "@/lib/api";
 
 export interface RedirectTarget {
   subdomain: string;
@@ -9,28 +7,33 @@ export interface RedirectTarget {
   active: boolean;
 }
 
-const MOCK_SUBDOMAINS: Record<string, RedirectTarget> = {
-  doughmination: {
-    subdomain: "doughmination",
-    destinationUrl: "https://doughmination.dev",
-    ownerDisplayName: "doughmination",
-    active: true,
-  },
-  alice: {
-    subdomain: "alice",
-    destinationUrl: "https://github.com/alice",
-    ownerDisplayName: "alice",
-    active: true,
-  },
-};
-
 export async function getSubdomainTarget(
   subdomain: string
 ): Promise<RedirectTarget | null> {
-  const normalized = subdomain.toLowerCase();
-  return MOCK_SUBDOMAINS[normalized] ?? null;
+  const res = await fetch(
+    `${API_URL}/subdomains/lookup/${encodeURIComponent(subdomain.toLowerCase())}`,
+    // Always hit the backend fresh — this is a redirect target, caching a
+    // stale destinationUrl here is exactly the "why is it still going to
+    // the old place" bug.
+    { cache: "no-store" }
+  );
+
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  return {
+    subdomain: data.subdomain,
+    destinationUrl: data.destinationUrl,
+    ownerDisplayName: data.subdomain,
+    active: data.active,
+  };
 }
 
+// --- Custom domains ---
+// There's no backend support for these yet (schema exists, no route) —
+// this intentionally always returns null until that's built, so
+// /d/[domain] falls through to the "not claimed" state rather than lying
+// about ownership.
 export interface CustomDomainTarget {
   domain: string;
   destinationUrl: string;
@@ -38,10 +41,8 @@ export interface CustomDomainTarget {
   active: boolean;
 }
 
-const MOCK_CUSTOM_DOMAINS: Record<string, CustomDomainTarget> = {};
-
 export async function getCustomDomainTarget(
-  domain: string
+  _domain: string
 ): Promise<CustomDomainTarget | null> {
-  return MOCK_CUSTOM_DOMAINS[domain.toLowerCase()] ?? null;
+  return null;
 }

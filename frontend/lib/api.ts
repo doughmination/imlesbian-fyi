@@ -7,6 +7,7 @@ export interface Me {
   discordUsername: string;
   discordAvatar: string | null;
   createdAt: string;
+  isAdmin: boolean;
 }
 
 export interface Subdomain {
@@ -23,7 +24,7 @@ export interface Subdomain {
 
 export interface MineResponse {
   subdomains: Subdomain[];
-  limit: number;
+  limit: number | null;
   claimCooldownUntil: string | null;
 }
 

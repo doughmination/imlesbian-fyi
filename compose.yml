@@ -14,6 +14,7 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-imlesbian}:${POSTGRES_PASSWORD}@${POSTGRES_HOST:-db}:5432/${POSTGRES_DB:-imlesbian_fyi}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-.imlesbian.fyi}
+      ADMIN_DISCORD_IDS: ${ADMIN_DISCORD_IDS:-}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-https://imlesbian.fyi}
       FRONTEND_DASHBOARD_URL: ${FRONTEND_DASHBOARD_URL:-https://imlesbian.fyi/dashboard}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:?DISCORD_CLIENT_ID is required}

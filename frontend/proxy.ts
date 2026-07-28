@@ -35,10 +35,10 @@ function extractSubdomain(host: string): string | null {
     return sub || null;
   }
 
-  // Custom domain (e.g. links.example.com) — not a *.imlesbian.fyi host at
-  // all. Flag it distinctly so the route handler can look it up as a
-  // custom domain rather than a subdomain.
-  return `__custom__:${hostname}`;
+  // Anything else isn't a *.imlesbian.fyi host — custom domains aren't
+  // supported yet (no backend route for them), so let it fall through to
+  // the normal 404 rather than pretending to resolve it.
+  return null;
 }
 
 export function proxy(request: NextRequest) {
@@ -49,13 +49,6 @@ export function proxy(request: NextRequest) {
   // dashboard, docs, etc.)
   if (subdomain === null) {
     return NextResponse.next();
-  }
-
-  if (subdomain.startsWith("__custom__:")) {
-    const domain = subdomain.replace("__custom__:", "");
-    const url = request.nextUrl.clone();
-    url.pathname = `/d/${domain}`;
-    return NextResponse.rewrite(url);
   }
 
   if (RESERVED_SUBDOMAINS.has(subdomain)) {

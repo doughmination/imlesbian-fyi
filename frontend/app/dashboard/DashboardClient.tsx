@@ -91,11 +91,35 @@ export function DashboardClient({
             />
           )}
           <div>
-            <p style={{ margin: 0, fontFamily: "var(--font-body)" }}>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-body)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
               {user.username}
+              {user.isAdmin && (
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.65rem",
+                    color: "var(--ink)",
+                    background: "var(--flag-4)",
+                    borderRadius: "999px",
+                    padding: "0.1rem 0.5rem",
+                  }}
+                >
+                  admin
+                </span>
+              )}
             </p>
             <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--muted)" }}>
-              {subdomains.length}/{limit} subdomains claimed
+              {limit === null
+                ? `${subdomains.length} subdomains claimed`
+                : `${subdomains.length}/${limit} subdomains claimed`}
             </p>
           </div>
         </div>
@@ -130,11 +154,11 @@ export function DashboardClient({
       )}
 
       <ClaimForm
-        disabled={onCooldown || subdomains.length >= limit}
+        disabled={onCooldown || (limit !== null && subdomains.length >= limit)}
         disabledReason={
           onCooldown
             ? "on cooldown"
-            : subdomains.length >= limit
+            : limit !== null && subdomains.length >= limit
               ? "limit reached"
               : undefined
         }
