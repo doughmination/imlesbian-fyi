@@ -33,6 +33,6 @@ services:
     ports:
       - "4070:4070"
 
-  networks:
-    infra:
-      external: true
+networks:
+  infra:
+    external: true
