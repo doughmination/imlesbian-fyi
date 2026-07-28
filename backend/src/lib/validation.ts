@@ -6,11 +6,27 @@ export const RESERVED_SUBDOMAINS = new Set([
   "app",
   "api",
   "docs",
+  "doc",
+  "documentation",
+  "support",
   "admin",
   "static",
   "cdn",
   "mail",
 ]);
+
+export const BLACKLISTED_SUBDOMAINS = [
+  "nigga",
+  "nigger",
+  "faggot",
+  "dykes",
+  "tranny",
+  "trannies",
+  "ywnbarw",
+  "ywnbarm",
+  "fake",
+  "invalid",
+] as const;
 
 export const subdomainFormatSchema = z
   .string()
@@ -21,10 +37,20 @@ export const subdomainFormatSchema = z
     "Only lowercase letters, numbers, and hyphens — can't start or end with a hyphen"
   );
 
-export const subdomainNameSchema = subdomainFormatSchema.refine(
-  (val) => !RESERVED_SUBDOMAINS.has(val),
-  { message: "This subdomain is reserved" }
-);
+export const subdomainNameSchema = subdomainFormatSchema
+  .refine(
+    (val) => !RESERVED_SUBDOMAINS.has(val),
+    { message: "This subdomain is reserved" }
+  )
+  .refine(
+    (val) => {
+      const name = val.toLowerCase();
+      return !BLACKLISTED_SUBDOMAINS.some((word) =>
+        name.includes(word)
+      );
+    },
+    { message: "This subdomain is banned" }
+  );
 
 export const destinationUrlSchema = z
   .string()
