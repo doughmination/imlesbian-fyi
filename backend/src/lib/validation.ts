@@ -28,6 +28,30 @@ export const BLACKLISTED_SUBDOMAINS = [
   "invalid",
 ] as const;
 
+const LEET_MAP = {
+  "0": "o",
+  "1": "i",
+  "!": "i",
+  "|": "i",
+  "3": "e",
+  "4": "a",
+  "@": "a",
+  "5": "s",
+  "$": "s",
+  "6": "g",
+  "9": "g",
+  "7": "t",
+  "+": "t",
+  "8": "b",
+} as const;
+
+function normalizeSubdomain(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[-_.]/g, "") // remove separators
+    .replace(/[013456789@$]/g, (c) => LEET_MAP[c] ?? c);
+}
+
 export const subdomainFormatSchema = z
   .string()
   .min(2, "Must be at least 2 characters")
@@ -44,9 +68,10 @@ export const subdomainNameSchema = subdomainFormatSchema
   )
   .refine(
     (val) => {
-      const name = val.toLowerCase();
+      const normalized = normalizeSubdomain(val);
+  
       return !BLACKLISTED_SUBDOMAINS.some((word) =>
-        name.includes(word)
+        normalized.includes(word)
       );
     },
     { message: "This subdomain is banned" }
