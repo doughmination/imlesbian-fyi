@@ -6,6 +6,8 @@ services:
     restart: unless-stopped
     networks:
       - infra
+    ports:
+      - "127.0.0.1:4071:4071"
     environment:
       NODE_ENV: production
       PORT: 4071
@@ -28,10 +30,10 @@ services:
       - infra
     environment:
       NODE_ENV: production
-      PORT: 7070
+      PORT: 4070
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.imlesbian.fyi}
     ports:
-      - "4070:4070"
+      - "127.0.0.1:4070:4070"
 
 networks:
   infra:
