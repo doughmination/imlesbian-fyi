@@ -1,12 +1,15 @@
 import { Hono } from "hono";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 import { db } from "@/db/client";
-import { subdomains } from "@/db/schema";
+import { subdomains, users } from "@/db/schema";
 import { requireAuth } from "@/auth/middleware";
 import {
   claimSubdomainSchema,
   updateSubdomainSchema,
   subdomainNameSchema,
+  discordVerificationHashSchema,
+  MAX_SUBDOMAINS_PER_USER,
+  CLAIM_COOLDOWN_DAYS,
 } from "@/lib/validation";
 
 export const subdomainRoutes = new Hono();
@@ -60,6 +63,29 @@ subdomainRoutes.get("/check/:name", async (c) => {
   return c.json({ available: !existing });
 });
 
+// --- Public: Discord linked-role domain verification file.
+// Discord's "linked domain" check fetches
+// https://{name}.imlesbian.fyi/.well-known/discord and expects a body of
+// `dh={hash}`. The Next.js proxy rewrites that path here.
+subdomainRoutes.get("/verify/:name", async (c) => {
+  const name = c.req.param("name").toLowerCase();
+
+  const [target] = await db
+    .select({
+      active: subdomains.active,
+      hash: subdomains.discordVerificationHash,
+    })
+    .from(subdomains)
+    .where(eq(subdomains.name, name))
+    .limit(1);
+
+  if (!target || !target.active || !target.hash) {
+    return c.text("Not found", 404);
+  }
+
+  return c.text(`dh=${target.hash}`);
+});
+
 // --- Authed: everything below requires a session ---
 
 subdomainRoutes.get("/mine", requireAuth, async (c) => {
@@ -69,7 +95,11 @@ subdomainRoutes.get("/mine", requireAuth, async (c) => {
     .from(subdomains)
     .where(eq(subdomains.ownerId, user.id));
 
-  return c.json({ subdomains: mine });
+  return c.json({
+    subdomains: mine,
+    limit: MAX_SUBDOMAINS_PER_USER,
+    claimCooldownUntil: user.subdomainClaimCooldownUntil,
+  });
 });
 
 subdomainRoutes.post("/claim", requireAuth, async (c) => {
@@ -79,6 +109,31 @@ subdomainRoutes.post("/claim", requireAuth, async (c) => {
 
   if (!parsed.success) {
     return c.json({ error: parsed.error.issues[0]?.message }, 400);
+  }
+
+  if (
+    user.subdomainClaimCooldownUntil &&
+    user.subdomainClaimCooldownUntil.getTime() > Date.now()
+  ) {
+    return c.json(
+      {
+        error: "You're on a claim cooldown after deleting a subdomain",
+        claimCooldownUntil: user.subdomainClaimCooldownUntil,
+      },
+      403
+    );
+  }
+
+  const [{ value: ownedCount }] = await db
+    .select({ value: count() })
+    .from(subdomains)
+    .where(eq(subdomains.ownerId, user.id));
+
+  if (ownedCount >= MAX_SUBDOMAINS_PER_USER) {
+    return c.json(
+      { error: `You can only claim up to ${MAX_SUBDOMAINS_PER_USER} subdomains` },
+      403
+    );
   }
 
   const { name, destinationUrl } = parsed.data;
@@ -128,6 +183,52 @@ subdomainRoutes.patch("/mine/:id", requireAuth, async (c) => {
   return c.json({ subdomain: updated });
 });
 
+// Set/replace the Discord linked-role verification hash. This is what
+// gets served (as `dh={hash}`) at /.well-known/discord on the subdomain.
+subdomainRoutes.put("/mine/:id/discord-verification", requireAuth, async (c) => {
+  const user = c.get("user")!;
+  const id = c.req.param("id");
+  const body = await c.req.json().catch(() => null);
+  const parsed = discordVerificationHashSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.issues[0]?.message }, 400);
+  }
+
+  const [updated] = await db
+    .update(subdomains)
+    .set({ discordVerificationHash: parsed.data.hash, updatedAt: new Date() })
+    .where(and(eq(subdomains.id, id), eq(subdomains.ownerId, user.id)))
+    .returning();
+
+  if (!updated) {
+    return c.json({ error: "Not found" }, 404);
+  }
+
+  return c.json({ subdomain: updated });
+});
+
+subdomainRoutes.delete("/mine/:id/discord-verification", requireAuth, async (c) => {
+  const user = c.get("user")!;
+  const id = c.req.param("id");
+
+  const [updated] = await db
+    .update(subdomains)
+    .set({ discordVerificationHash: null, updatedAt: new Date() })
+    .where(and(eq(subdomains.id, id), eq(subdomains.ownerId, user.id)))
+    .returning();
+
+  if (!updated) {
+    return c.json({ error: "Not found" }, 404);
+  }
+
+  return c.json({ subdomain: updated });
+});
+
+// Deleting a subdomain frees the name instantly (nothing soft-deleted —
+// the row and any files/verification hash tied to it are gone the moment
+// this commits) and starts a 7-day cooldown before this user can claim
+// a new one.
 subdomainRoutes.delete("/mine/:id", requireAuth, async (c) => {
   const user = c.get("user")!;
   const id = c.req.param("id");
@@ -141,5 +242,14 @@ subdomainRoutes.delete("/mine/:id", requireAuth, async (c) => {
     return c.json({ error: "Not found" }, 404);
   }
 
-  return c.json({ ok: true });
+  const cooldownUntil = new Date(
+    Date.now() + CLAIM_COOLDOWN_DAYS * 24 * 60 * 60 * 1000
+  );
+
+  await db
+    .update(users)
+    .set({ subdomainClaimCooldownUntil: cooldownUntil })
+    .where(eq(users.id, user.id));
+
+  return c.json({ ok: true, claimCooldownUntil: cooldownUntil });
 });

@@ -67,6 +67,15 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Discord's linked-role domain verification fetches this exact path and
+  // expects a plain-text `dh={hash}` body — keep it separate from the
+  // redirect page rather than trying to cram it into /r/[subdomain].
+  if (request.nextUrl.pathname === "/.well-known/discord") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/r/${subdomain}/well-known-discord`;
+    return NextResponse.rewrite(url);
+  }
+
   const url = request.nextUrl.clone();
   url.pathname = `/r/${subdomain}`;
   return NextResponse.rewrite(url);

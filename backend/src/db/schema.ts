@@ -15,6 +15,11 @@ export const users = pgTable("users", {
   discordUsername: text("discord_username").notNull(),
   discordAvatar: text("discord_avatar"),
   username: text("username").notNull().unique(),
+  // Set whenever the user deletes a subdomain; POST /subdomains/claim
+  // rejects new claims while now() < this. Null = no cooldown active.
+  subdomainClaimCooldownUntil: timestamp("subdomain_claim_cooldown_until", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -29,6 +34,10 @@ export const subdomains = pgTable("subdomains", {
   destinationUrl: text("destination_url").notNull(),
   active: boolean("active").notNull().default(true),
   visitCount: integer("visit_count").notNull().default(0),
+  // The value published at https://{name}.imlesbian.fyi/.well-known/discord
+  // as `dh={discordVerificationHash}` for Discord's linked-role domain
+  // verification. Null until the user sets it from the dashboard.
+  discordVerificationHash: text("discord_verification_hash"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

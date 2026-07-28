@@ -8,6 +8,13 @@
       "when": 1785194425351,
       "tag": "0000_orange_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785230359992,
+      "tag": "0001_discord_verification_and_cooldown",
+      "breakpoints": true
     }
   ]
 }

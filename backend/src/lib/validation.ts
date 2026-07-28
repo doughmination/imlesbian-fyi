@@ -62,3 +62,21 @@ export const updateSubdomainSchema = z.object({
   destinationUrl: destinationUrlSchema.optional(),
   active: z.boolean().optional(),
 });
+
+// Discord linked-role domain verification publishes a value like
+// `dh=a1b2c3...` — Discord generates this hash for the user to copy in,
+// so we just validate it's a plausible token, not any particular format.
+export const discordVerificationHashSchema = z.object({
+  hash: z
+    .string()
+    .trim()
+    .min(1, "Can't be empty")
+    .max(256, "That doesn't look like a Discord verification value")
+    .regex(
+      /^[a-zA-Z0-9]+$/,
+      "Should just be the hash Discord gives you — letters and numbers only, no `dh=` prefix"
+    ),
+});
+
+export const MAX_SUBDOMAINS_PER_USER = 5;
+export const CLAIM_COOLDOWN_DAYS = 7;
