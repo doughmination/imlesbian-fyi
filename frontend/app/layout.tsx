@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const display = Fraunces({
-  subsets: ["latin"],
+const display = localFont({
+  src: "./fonts/MapleMono-Light.woff2",
   variable: "--font-display",
-  weight: ["500", "600"],
-  style: ["italic", "normal"],
+  weight: "300",
 });
 
 const body = Inter({
@@ -15,10 +15,18 @@ const body = Inter({
   weight: ["400", "500"],
 });
 
-const mono = IBM_Plex_Mono({
-  subsets: ["latin"],
+const mono = localFont({
+  src: [
+    {
+      path: "./fonts/SF-Mono-Regular.otf",
+      weight: "400",
+    },
+    {
+      path: "./fonts/SF-Mono-Medium.otf",
+      weight: "500",
+    },
+  ],
   variable: "--font-mono",
-  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
