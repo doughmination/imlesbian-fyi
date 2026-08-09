@@ -2,3 +2,4 @@
 node_modules/
 cloudflare.ini
 .next/
+.DS_Store
