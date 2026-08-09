@@ -1,8 +1,7 @@
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: doughmination/lesbian-backend:latest
+    pull_policy: always
     restart: unless-stopped
     networks:
       - infra
@@ -22,11 +21,8 @@ services:
       DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI:-https://api.imlesbian.fyi/auth/discord/callback}
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.imlesbian.fyi}
+    image: doughmination/lesbian-frontend:latest
+    pull_policy: always
     restart: unless-stopped
     depends_on:
       - backend
